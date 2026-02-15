@@ -1,0 +1,745 @@
+---
+title: "Homework 02 - Data Scraping, APIs and Advanced Regression"
+subtitle: "JSC370 (Winter 2026) - Zihan Guo"
+date: "February 15, 2026"
+
+format:
+  html:
+    toc: true
+
+jupyter: python3
+
+execute:
+  enabled: true
+  echo: true
+  warning: false
+  message: false
+---
+
+# Data Acquisition and Wrangling
+## 1. Obtain two datasets: life expectancy and alcohol consumption
+```{python}
+from pathlib import Path
+from IPython.display import display
+import requests
+import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
+import re
+import matplotlib.pyplot as plt
+```
+
+### a. World Bank API data
+```{python}
+YEARS = ["1996", "2016", "2019"]
+
+INDICATORS = {
+    "life_expectancy": "SP.DYN.LE00.IN",
+    "population": "SP.POP.TOTL",
+    "gdp_per_capita": "NY.GDP.PCAP.CD"
+}
+
+def get_country_only_list() -> set:
+    """
+    Get official World Bank 'country-only' names (exclude region/aggregate entries).
+    """
+    url = "https://api.worldbank.org/v2/country"
+    params = {"format": "json", "per_page": 400}
+    r = requests.get(url, params=params)
+    r.raise_for_status()
+    data = r.json()[1]
+    meta = pd.DataFrame(data)
+
+    meta["region_name"] = meta["region"].apply(
+        lambda x: x.get("value") if isinstance(x, dict) else None
+    )
+    meta = meta[meta["region_name"] != "Aggregates"]
+    return set(meta["name"].astype(str))
+
+COUNTRY_ONLY = get_country_only_list()
+
+def fetch_wb_indicator(indicator_code: str, value_name: str, years=YEARS) -> pd.DataFrame:
+    url = f"https://api.worldbank.org/v2/country/all/indicator/{indicator_code}"
+    params = {"format": "json", "per_page": 20000}
+    r = requests.get(url, params=params)
+    r.raise_for_status()
+    payload = r.json()
+    data = payload[1]
+
+    df = pd.DataFrame(data)
+
+    df = df[["countryiso3code", "country", "date", "value"]].copy()
+
+    df["iso3"] = df["countryiso3code"]
+    df["Country"] = df["country"].apply(lambda x: x.get("value") if isinstance(x, dict) else None)
+    df["Year"] = df["date"]
+    df[value_name] = pd.to_numeric(df["value"], errors="coerce")
+
+    df = df[["iso3", "Country", "Year", value_name]].copy()
+
+    df = df[df["Year"].isin(years)]
+    df = df[df["Country"].isin(COUNTRY_ONLY)]
+    df = df.dropna(subset=[value_name])
+
+    return df
+
+# Fetch each indicator
+life_df = fetch_wb_indicator(INDICATORS["life_expectancy"], "life_expectancy")
+pop_df  = fetch_wb_indicator(INDICATORS["population"], "population")
+gdp_df  = fetch_wb_indicator(INDICATORS["gdp_per_capita"], "gdp_per_capita")
+
+# Merge by Country, Year
+wb_df = (life_df
+         .merge(pop_df, on=["iso3","Country","Year"], how="left")
+         .merge(gdp_df, on=["iso3","Country","Year"], how="left"))
+
+wb_df["Year"] = wb_df["Year"].astype(int)
+
+print("Q1a World Bank merged shape:", wb_df.shape)
+
+print("Missingness (counts):")
+print(wb_df[["life_expectancy","population","gdp_per_capita"]].isna().sum())
+
+wb_df.head()
+```
+
+#### b&c. Alcohol (scraped data) & Reshape the alcohol data:
+```{python}
+WIKI_URL = "https://en.wikipedia.org/wiki/List_of_countries_by_alcohol_consumption_per_capita"
+
+DATA_DIR = Path("data")         
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+alcohol_path = DATA_DIR / "alcohol_wiki_long.csv"
+REDOWNLOAD = True              
+
+def clean_footnotes(x: str) -> str:
+    if x is None:
+        return x
+    s = str(x)
+    s = re.sub(r"\[[^\]]*\]", "", s) 
+    return s.strip()
+
+def coerce_numeric(series: pd.Series) -> pd.Series:
+    s = series.astype(str).map(clean_footnotes)
+    s = s.str.replace("–", "", regex=False)     
+    s = s.str.replace(",", "", regex=False)
+    s = s.str.strip()
+    s = s.replace({"": np.nan, "-": np.nan, "—": np.nan})
+    return pd.to_numeric(s, errors="coerce")
+
+def flatten_columns(df: pd.DataFrame) -> pd.DataFrame:
+    out = df.copy()
+    if isinstance(out.columns, pd.MultiIndex):
+        out.columns = [
+            " ".join([str(x) for x in tup if str(x) != "nan"]).strip()
+            for tup in out.columns
+        ]
+    out.columns = [str(c).strip() for c in out.columns]
+    return out
+
+def find_year_col(cols: list[str], year: int) -> str | None:
+    y = str(year)
+    for c in cols:
+        if str(c).strip() == y:
+            return c
+    for c in cols:
+        if y in str(c):
+            return c
+    return None
+
+if alcohol_path.exists() and not REDOWNLOAD:
+    alcohol = pd.read_csv(alcohol_path)
+    alcohol["year"] = alcohol["year"].astype(int)
+    print(f"Loaded cached alcohol data from: {alcohol_path}")
+else:
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                      "AppleWebKit/537.36 (KHTML, like Gecko) "
+                      "Chrome/120.0 Safari/537.36"
+    }
+    resp = requests.get(WIKI_URL, headers=headers, timeout=30)
+    resp.raise_for_status()
+    html = resp.text
+
+    tables = pd.read_html(html)
+
+    target = None
+    country_col = None
+    year_cols = None
+
+    for t in tables:
+        t = flatten_columns(t)
+        cols = list(t.columns)
+
+        y1996 = find_year_col(cols, 1996)
+        y2016 = find_year_col(cols, 2016)
+        y2019 = find_year_col(cols, 2019)
+
+        if y1996 and y2016 and y2019:
+            country_candidates = [c for c in cols if "country" in str(c).lower()]
+            if country_candidates:
+                target = t.copy()
+                country_col = country_candidates[0]
+                year_cols = {1996: y1996, 2016: y2016, 2019: y2019}
+                break
+
+    if target is None:
+        raise RuntimeError("Could not find a Wikipedia table containing 1996/2016/2019 columns.")
+
+    target = target.rename(columns={
+        country_col: "country_wiki",
+        year_cols[1996]: "1996",
+        year_cols[2016]: "2016",
+        year_cols[2019]: "2019"
+    }).copy()
+
+    target["country_wiki"] = target["country_wiki"].map(clean_footnotes)
+    for y in ["1996", "2016", "2019"]:
+        target[y] = coerce_numeric(target[y])
+
+    alcohol = target.melt(
+        id_vars=["country_wiki"],
+        value_vars=["1996", "2016", "2019"],
+        var_name="year",
+        value_name="alcohol_consumption"
+    )
+    alcohol["year"] = alcohol["year"].astype(int)
+
+    alcohol.to_csv(alcohol_path, index=False)
+    print(f"Downloaded and cached alcohol data to: {alcohol_path}")
+
+display(alcohol.head())
+
+print("Alcohol (long) shape:", alcohol.shape)
+print("\nAlcohol missingness (counts):")
+print(alcohol[["country_wiki", "year", "alcohol_consumption"]].isna().sum())
+```
+
+#### d. Filter the life expectancy data
+##### d.0 Add ISO3 codes to the alcohol dataset 
+```{python}
+wb_name_to_iso3 = (wb_df[["Country", "iso3"]]
+                   .dropna()
+                   .drop_duplicates()
+                   .set_index("Country")["iso3"]
+                   .to_dict())
+
+def add_iso3_from_name(df: pd.DataFrame, name_col: str, iso3_col: str = "iso3") -> pd.DataFrame:
+    out = df.copy()
+
+    iso3_overrides = {
+        "Kosovo": "XKX",
+        "Netherlands Antilles": "ANT", 
+    }
+
+    name_to_wb = {
+        "United States of America": "United States",
+        "Russian Federation": "Russia",
+        "Czech Republic": "Czechia",
+        "Viet Nam": "Vietnam",
+        "Korea, South": "Korea, Rep.",
+        "Korea, North": "Korea, Dem. People's Rep.",
+        "Republic of the Congo": "Congo, Rep.",
+        "Democratic Republic of the Congo": "Congo, Dem. Rep.",
+        "Gambia, The": "The Gambia",
+        "Bahamas, The": "The Bahamas",
+        "Egypt": "Egypt, Arab Rep.",
+        "Iran": "Iran, Islamic Rep.",
+        "Bahamas": "Bahamas, The",                 
+        "Brunei": "Brunei Darussalam",
+        "Cape Verde": "Cabo Verde",                
+        "Congo": "Congo, Rep.",                    
+        "DR Congo": "Congo, Dem. Rep.",           
+        "Gambia": "Gambia, The",                   
+        "Ivory Coast": "Cote d'Ivoire",            
+        "Kyrgyzstan": "Kyrgyz Republic",          
+        "Laos": "Lao PDR",                         
+        "Macedonia": "North Macedonia",            
+        "Micronesia": "Micronesia, Fed. Sts.",     
+        "North Korea": "Korea, Dem. People's Rep.",
+        "Russia": "Russian Federation",            
+        "Saint Kitts and Nevis": "St. Kitts and Nevis",
+        "Saint Lucia": "St. Lucia",
+        "Saint Vincent and the Grenadines": "St. Vincent and the Grenadines",
+        "Slovakia": "Slovak Republic",             
+        "South Korea": "Korea, Rep.",              
+        "Syria": "Syrian Arab Republic", 
+        "Somalia": "Somalia, Fed. Rep.",         
+        "São Tomé and Príncipe": "Sao Tome and Principe",
+        "Turkey": "Turkiye",                       
+        "Venezuela": "Venezuela, RB",
+        "Vietnam": "Viet Nam",
+        "Yemen": "Yemen, Rep.",                    
+    }
+
+    names = out[name_col].astype(str).map(clean_footnotes)
+
+    def lookup_iso3(n: str):
+        n = n.strip()
+
+        if n in iso3_overrides:
+            return iso3_overrides[n]
+
+        if n in wb_name_to_iso3:
+            return wb_name_to_iso3[n]
+
+        n2 = name_to_wb.get(n, n)
+        if n2 in wb_name_to_iso3:
+            return wb_name_to_iso3[n2]
+
+        n3 = " ".join(n2.split())
+        return wb_name_to_iso3.get(n3, np.nan)
+
+    out[iso3_col] = names.map(lookup_iso3)
+
+    s = pd.Series(out[iso3_col], dtype="object")
+    s = s.where(s.astype(str).str.fullmatch(r"[A-Z]{3}"), np.nan)
+    out[iso3_col] = s
+
+    return out
+
+alcohol_iso = add_iso3_from_name(alcohol, "country_wiki", "iso3")
+
+unmapped_wiki = (alcohol_iso[alcohol_iso["iso3"].isna()][["country_wiki"]]
+                 .drop_duplicates()
+                 .sort_values("country_wiki"))
+
+print("Unmapped Wikipedia country names (first 50):")
+display(unmapped_wiki.head(50))
+```
+```{python}
+[x for x in wb_df["Country"].unique() if "Cook" in x]
+[x for x in wb_df["Country"].unique() if "Niue" in x]
+```
+```{python}
+alcohol_iso_clean = alcohol_iso.dropna(subset=["iso3"]).copy()
+
+df_merged = wb_df.merge(
+    alcohol_iso_clean[["iso3", "year", "alcohol_consumption", "country_wiki"]],
+    left_on=["iso3", "Year"],
+    right_on=["iso3", "year"],
+    how="inner"
+)
+
+df_merged = df_merged.drop(columns=["year"], errors="ignore")
+
+df_merged["Country"] = df_merged["Country"].fillna(df_merged["country_wiki"])
+
+df_merged = df_merged.rename(columns={
+    "Year": "year",
+    "Country": "country",
+    "alcohol_consumption": "alcohol_consumption"
+})
+
+df_merged = df_merged[[
+    "iso3",
+    "country",
+    "country_wiki",
+    "year",
+    "life_expectancy",
+    "alcohol_consumption",
+    "population",
+    "gdp_per_capita"
+]].copy()
+
+print("df_merged shape:", df_merged.shape)
+
+print("\nMissingness in df_merged:")
+print(df_merged[[
+    "life_expectancy",
+    "alcohol_consumption",
+    "population",
+    "gdp_per_capita"
+]].isna().sum())
+
+display(df_merged.head())
+```
+
+- Country names differed slightly between the World Bank and Wikipedia datasets, so a custom name mapping was applied to standardize them before converting to ISO3 codes. 
+
+- Most mismatches were resolved successfully. Cook Islands and Niue were not present in the World Bank country dataset and therefore could not be merged. These territories were excluded from the final dataset. Finally, we obtained 564 lines dataset with 8 variables.
+
+### EDA of the merged dataset
+```{python}
+print("Shape of merged dataset:", df_merged.shape)
+
+print("\nMissing values (counts):")
+print(df_merged.isna().sum())
+
+print("\nSummary statistics:")
+print(df_merged[[
+    "life_expectancy",
+    "alcohol_consumption",
+    "population",
+    "gdp_per_capita"
+]].describe())
+
+print("\nHighest life expectancy:")
+display(df_merged.sort_values("life_expectancy", ascending=False)
+        [["country","year","life_expectancy"]]
+        .head(5))
+
+print("\nLowest life expectancy:")
+display(df_merged.sort_values("life_expectancy")
+        [["country","year","life_expectancy"]]
+        .head(5))
+
+print("\nHighest alcohol consumption:")
+display(df_merged.sort_values("alcohol_consumption", ascending=False)
+        [["country","year","alcohol_consumption"]]
+        .head(5))
+
+print("\nLowest alcohol consumption:")
+display(df_merged.sort_values("alcohol_consumption")
+        [["country","year","alcohol_consumption"]]
+        .head(5))
+```
+
+- The merged dataset contains 564 country-year observations and 8 variables, including life expectancy, alcohol consumption per capita, population, and GDP per capita. Missing values are minimal overall, with 43 missing observations for alcohol consumption and 8 missing values for GDP per capita, while life expectancy and population are complete.
+
+- Summary statistics show that the average life expectancy across countries and years is approximately 69.8 years, ranging from 31.5 to 84.5 years. Alcohol consumption averages 5.5 liters per capita, with a range from 0 to 17 liters, indicating substantial cross-country variation. GDP per capita also varies widely, reflecting large global income disparities.
+
+- The highest life expectancies are observed in high-income countries such as Andorra, Japan, and Switzerland, while the lowest values occur in lower-income or conflict-affected countries such as the Central African Republic and Sierra Leone. Alcohol consumption is highest in several Eastern European countries, whereas the lowest levels are observed in predominantly Muslim-majority countries such as Mauritania, Libya, and Kuwait. These patterns align with known global economic and cultural differences.
+
+## 2. Create a summary table of the merged dataset
+```{python}
+# Variable types
+df_merged["year"] = df_merged["year"].astype(int)
+
+# Needed columns
+cols = [
+    "life_expectancy",
+    "alcohol_consumption",
+    "population",
+    "gdp_per_capita"
+]
+
+for c in cols:
+    df_merged[c] = pd.to_numeric(df_merged[c], errors="coerce")
+
+# Create summary table
+summary_table = (
+    df_merged
+    .groupby("year")[cols]
+    .agg(["mean", "std"])
+    .reset_index()
+)
+
+summary_table.columns = ["year"] + [
+    f"{var}_{stat}" for var, stat in summary_table.columns[1:]
+]
+
+summary_table = summary_table.round(3)
+
+summary_table
+```
+
+Summary:
+
+Average life expectancy increased steadily over the selected years. In 1996, the mean life expectancy was approximately 65.5 years. This increased to 71.6 years in 2016 and further to 72.2 years in 2019. This upward trend reflects overall global improvements in healthcare, economic development, and living standards over time.
+
+The standard deviation declined from 9.7 years in 1996 to around 7.8–7.9 years in 2016 and 2019, suggesting that differences in life expectancy across countries have slightly narrowed. Overall, the results indicate both global improvement and modest convergence in life expectancy during the period studied.
+
+## 3. Create a new categorical variable and new summary table
+```{python}
+# Calculate quartiles
+q1 = df_merged["gdp_per_capita"].quantile(0.25)
+q3 = df_merged["gdp_per_capita"].quantile(0.75)
+
+q1, q3
+```
+```{python}
+def categorize_gdp(x):
+    if x <= q1:
+        return "low"
+    elif x <= q3:
+        return "medium"
+    else:
+        return "high"
+
+df_merged["gdp_level"] = df_merged["gdp_per_capita"].apply(categorize_gdp)
+
+df_merged["gdp_level"].value_counts()
+```
+```{python}
+# Create summary table by gdp_level
+gdp_summary = (
+    df_merged
+    .groupby("gdp_level")["gdp_per_capita"]
+    .agg(["min", "max", "count"])
+    .reset_index()
+)
+
+gdp_summary
+```
+
+Summary:
+
+Countries were grouped into low, medium, and high GDP per capita categories. The dataset includes 139 low-income, 278 middle-income, and 139 high-income observations, with middle-income countries forming the largest group.
+
+GDP ranges clearly separate the categories: low-income countries fall below about $1,281, middle-income countries range up to roughly $13,216, and high-income countries exceed $13,432, reaching over $112,000. This reflects substantial global income inequality in the sample.
+
+# Visualization
+## 4. Create the figures with plotnine
+### a. Two line plots:
+```{python}
+from plotnine import *
+
+countries = [
+    "Canada",
+    "China",
+    "Japan",
+    "Australia"
+]
+
+df_line = df_merged[df_merged["country"].isin(countries)]
+
+# life_expectancy Line plot
+(
+    ggplot(df_line, aes(x="year", y="life_expectancy", color="country")) +
+    geom_line(size=1.2) +
+    geom_point(size=3) +
+    labs(
+        title="Life Expectancy Over Time",
+        x="Year",
+        y="Life Expectancy (Years)",
+        color="Country"
+    ) +
+    theme_minimal()
+)
+```
+```{python}
+# alcohol_consumption Line plot
+(
+    ggplot(df_line,
+           aes(x="year",
+               y="alcohol_consumption",
+               color="country",
+               group="country")) +
+    geom_line(size=1.2) +
+    geom_point(size=3) +
+    labs(
+        title="Alcohol Consumption by Year",
+        x="Year",
+        y="Alcohol Consumption (Liters per capita)",
+        color="Country"
+    ) +
+    theme_minimal()
+)
+```
+
+Summary:
+
+The line plots show clear upward trends in life expectancy for all four countries between 1996 and 2019. Japan consistently has the highest life expectancy, followed by Australia and Canada, while China starts at a lower level but shows notable improvement over time. Overall, the results indicate steady improvements in health outcomes across countries.
+
+In contrast, alcohol consumption patterns vary more across countries. Australia and Canada show relatively high and increasing levels until 2016, followed by slight declines by 2019. Japan maintains relatively stable consumption levels, while China shows an increase up to 2016 and then a noticeable decline in 2019. These differences suggest that alcohol consumption trends are less uniform than life expectancy trends across countries.
+
+
+### b. scatterplots with linear and lowessregression lines of life expectancy and alcohol consumption
+```{python}
+(
+    ggplot(df_merged, aes(x="alcohol_consumption", y="life_expectancy")) +
+    geom_point(alpha=0.6) +
+    geom_smooth(method="lm", color="blue", se=False) +
+    geom_smooth(method="lowess", color="red", se=False) +
+    facet_wrap("~year") +
+    labs(
+        title="Association Between Alcohol Consumption and Life Expectancy",
+        subtitle="Linear (blue) and LOWESS (red) regression lines shown by year",
+        x="Alcohol Consumption (Liters per capita)",
+        y="Life Expectancy (Years)"
+    ) +
+    theme_minimal()
+)
+```
+
+Summary:
+
+The scatterplots show a generally positive association between alcohol consumption and life expectancy across all three years. The linear regression lines indicate that countries with higher alcohol consumption tend to have higher life expectancy on average. However, this relationship likely reflects underlying economic and development differences rather than a direct causal effect of alcohol consumption.
+
+The LOWESS curves suggest some nonlinearity, particularly at lower levels of alcohol consumption where life expectancy increases more rapidly. Overall, the strength of the association appears relatively consistent across 1996, 2016, and 2019.
+
+### c. Boxplot by GDP Level
+```{python}
+(
+    ggplot(df_merged, aes(x="gdp_level", y="alcohol_consumption")) +
+    geom_boxplot() +
+    facet_wrap("~year") +
+    labs(
+        title="Alcohol Consumption by GDP Level",
+        x="GDP Level",
+        y="Alcohol Consumption"
+    ) +
+    theme_minimal()
+)
+```
+
+Summary:
+
+The boxplots show that alcohol consumption is generally higher in high-GDP countries compared to medium- and low-GDP countries across all three years. The median alcohol consumption is consistently highest in the high-income group and lowest in the low-income group. This pattern remains stable from 1996 to 2019, suggesting a persistent association between economic development and alcohol consumption levels.
+
+### d. Top 10 Life Expectancy Change
+```{python}
+# Calculate life expectancy change from 1996 to 2019
+df_change = df_merged.pivot_table(
+    index="country",
+    columns="year",
+    values="life_expectancy"
+).dropna()
+
+df_change["change"] = df_change[2019] - df_change[1996]
+
+top10 = df_change.sort_values("change", ascending=False).head(10)
+top10 = top10.reset_index()
+```
+```{python}
+# Plot shown
+df_plot = df_merged[df_merged["country"].isin(top10["country"]) & 
+                    df_merged["year"].isin([1996, 2019])]
+
+(
+    ggplot(df_plot, aes(x="country", y="life_expectancy", fill="factor(year)")) +
+    geom_bar(stat="identity", position="dodge") +
+    labs(
+        title="Life Expectancy Change (1996 vs 2019)",
+        x="Country",
+        y="Life Expectancy",
+        fill="Year"
+    ) +
+    theme_minimal() +
+    theme(axis_text_x=element_text(rotation=45, hjust=1))
+)
+```
+
+Summary:
+
+The bar chart shows substantial improvements in life expectancy between 1996 and 2019 for the ten countries with the largest increases. All selected countries experienced significant gains, with increases of roughly 15 to 20 years. Most of these countries are in Sub-Saharan Africa, suggesting major progress in health conditions, disease control, and overall development over the past two decades.
+
+### e. My own plot: Role of GDP in Alcohol–Life Expectancy Relationship
+```{python}
+(
+    ggplot(df_merged, 
+           aes(x="alcohol_consumption", 
+               y="life_expectancy", 
+               color="gdp_per_capita")) +
+    geom_point(alpha=0.7) +
+    scale_color_gradient(low="blue", high="red") +
+    facet_wrap("~year") +
+    labs(
+        title="Role of GDP in Alcohol–Life Expectancy Relationship",
+        x="Alcohol Consumption",
+        y="Life Expectancy",
+        color="GDP per capita"
+    ) +
+    theme_minimal()
+)
+```
+
+Summary:
+
+The plot suggests that GDP per capita plays an important role in the relationship between alcohol consumption and life expectancy. Countries with higher GDP per capita (shown in red) consistently exhibit higher life expectancy levels, regardless of alcohol consumption. In contrast, lower-income countries (blue) tend to have lower life expectancy even at similar levels of alcohol consumption.
+
+This pattern indicates that economic development may be a key underlying factor influencing health outcomes, potentially confounding the observed association between alcohol consumption and life expectancy.
+
+# Advanced Regression
+## 5. Construct a multiple linear regression model
+### a. Summary of the model
+```{python}
+# Scale GDP (per instruction)
+df_merged["gdp_scaled"] = df_merged["gdp_per_capita"] / 10000
+
+import statsmodels.formula.api as smf
+
+model_lm = smf.ols(
+    formula="life_expectancy ~ alcohol_consumption + gdp_scaled + C(year)",
+    data=df_merged
+).fit()
+
+print(model_lm.summary())
+```
+
+Summary:
+
+The multiple linear regression model examines the association between alcohol consumption and life expectancy while adjusting for GDP per capita and year. The model explains approximately 50% of the variation in life expectancy (R2 = 0.500), indicating a moderate overall fit.
+
+After controlling for GDP and year, alcohol consumption remains positively and statistically significantly associated with life expectancy (Beta = 0.63, p < 0.001). This suggests that a one-unit increase in alcohol consumption is associated with an estimated 0.63-year increase in life expectancy, holding other variables constant.
+
+GDP per capita shows a strong positive association with life expectancy (β = 2.42, p < 0.001). This indicates that higher economic development is strongly linked to better health outcomes.
+
+The year indicators are also positive and significant, suggesting that life expectancy increased over time even after adjusting for alcohol consumption and GDP.
+
+### b. Plots
+```{python}
+from pygam import LinearGAM, s, f
+
+gam_df = df_merged.copy()
+
+gam_df["year_cat"] = pd.Categorical(gam_df["year"])
+
+gam_df = gam_df[[
+    "life_expectancy",
+    "alcohol_consumption",
+    "gdp_per_capita",
+    "year_cat"
+]].copy()
+
+gam_df = gam_df.replace([np.inf, -np.inf], np.nan).dropna()
+
+gam_df["year_code"] = gam_df["year_cat"].cat.codes
+
+X = gam_df[[
+    "alcohol_consumption",
+    "gdp_per_capita",
+    "year_code"
+]].to_numpy()
+
+y = gam_df["life_expectancy"].to_numpy()
+
+print("Rows used:", len(gam_df))
+
+gam = LinearGAM(s(0) + s(1) + f(2)).fit(X, y)
+
+gam.summary()
+```
+```{python}
+fig, axs = plt.subplots(1, 2, figsize=(14, 5))
+
+terms = ["Alcohol Consumption (Litres per capita)",
+         "GDP per capita (scaled)"]
+
+for i, ax in enumerate(axs):
+    
+    XX = gam.generate_X_grid(term=i)
+    pdep, confi = gam.partial_dependence(term=i, X=XX, width=0.95)
+    
+    ax.plot(XX[:, i], pdep, color="#1f77b4", linewidth=2)
+    
+    ax.fill_between(
+        XX[:, i],
+        confi[:, 0],
+        confi[:, 1],
+        color="#1f77b4",
+        alpha=0.2
+    )
+    
+    ax.set_title(f"GAM Smooth for {terms[i]}", fontsize=12)
+    ax.set_xlabel(terms[i])
+    ax.set_ylabel("Partial Effect on Life Expectancy (Years)")
+    ax.axhline(0, color="black", linestyle="--", linewidth=1)
+
+plt.tight_layout()
+plt.show()
+```
+
+Summary:
+
+A Generalized Additive Model (GAM) was fitted to examine the relationship between life expectancy and alcohol consumption, GDP per capita, and year effects. The model was estimated using 515 country-year observations and achieved a pseudo R2 of 0.69, indicating that the model explains a substantial proportion of variation in life expectancy.
+
+The smooth term for GDP per capita is highly significant and shows a strong positive, nonlinear relationship with life expectancy. The partial dependence plot suggests that life expectancy increases sharply at low income levels and continues to rise more gradually as income increases, indicating diminishing returns at higher GDP levels.
+
+In contrast, the smooth term for alcohol consumption is not statistically significant, and the partial dependence plot shows only modest fluctuations around zero. This suggests that, after controlling for GDP and year effects, alcohol consumption does not have a strong systematic association with life expectancy in this model.
+
+The year factor is statistically significant, indicating that life expectancy increased over time even after adjusting for GDP and alcohol consumption. This reflects overall global improvements in health and living conditions between 1996 and 2019.
+
+Finally, although the model reports p-values, pyGAM warns that these values may be underestimated due to smoothing parameter estimation. Therefore, interpretation focuses primarily on effect sizes and the shape of the smooth functions rather than strict hypothesis testing.
