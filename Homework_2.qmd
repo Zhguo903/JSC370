@@ -15,6 +15,7 @@ execute:
   warning: false
   message: false
 ---
+Link to GitHub repository: https://github.com/Zhguo903/JSC370.git
 
 # Data Acquisition and Wrangling
 ## 1. Obtain two datasets: life expectancy and alcohol consumption
