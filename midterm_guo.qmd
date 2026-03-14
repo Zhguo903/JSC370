@@ -1,0 +1,894 @@
+---
+title: "Midterm Project -- The Guardian Open Platform"
+author: "Zihan Guo"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-fold: true
+    code-tools: true
+    embed-resources: true
+jupyter: python3
+execute:
+  echo: true
+  message: false
+  warning: false
+  cache: false
+---
+
+## API key setup
+Fetches data from the Guardian API by my key.
+```{python}
+import os
+os.environ["GUARDIAN_API_KEY"] = "fb7080d7-f3a8-487d-8396-631bb3f9beeb"
+```
+
+# Introduction
+
+The Guardian Open Platform provides a REST API to query a large archive of Guardian content. In this project, I study how The Guardian’s coverage of artificial intelligence changes over time in terms of article volume, section distribution, and tone.
+
+In this notebook, “AI coverage” is operationalized as the union of multiple AI-related Guardian API searches, with duplicate articles removed by article ID.
+
+## Research question
+
+### How has The Guardian’s coverage of artificial intelligence changed over time in terms of volume, section distribution, and tone?
+
+This notebook examines:
+
+1. **Coverage volume:** How does the monthly number of AI-related Guardian articles change over time?
+2. **Section distribution:** Which sections publish the most AI-related articles, and how does the section mix vary over time?
+3. **Tone:** How does sentiment vary over time and across sections?  
+   In addition, Guardian API “tone” tags are treated here as **editorial-format labels** rather than direct sentiment measures.
+
+```{python}
+from IPython.display import Markdown, display
+
+params = {
+    # AI coverage is operationalized as the union of these Guardian API queries
+    "search_terms": [
+        "artificial intelligence",
+        "machine learning",
+        "generative AI",
+        "large language model",
+        "ChatGPT"
+    ],
+    "use_section": "",
+    "from_date": "2021-01-01",
+    "to_date": "2025-12-31",
+    "api_page_size": 100,
+    "order_by": "newest",
+    "show_fields": "headline,trailText,wordcount,byline",
+    "show_tags": "keyword,tone",
+    "refresh_data": False,
+    "sleep_s": 1.05,
+    "seed": 370,
+    "audit_n": 60
+}
+
+display(Markdown(
+    f"""
+**Run settings**
+
+- **Search terms:** {", ".join(params["search_terms"])}
+- **Section filter:** {params["use_section"] if params["use_section"] else "None (all sections)"}
+- **Date window:** {params["from_date"]} to {params["to_date"]}
+- **API page size:** {params["api_page_size"]}
+- **Order by:** {params["order_by"]}
+- **Refresh data:** {params["refresh_data"]}
+"""
+))
+```
+
+# Methods
+
+## Data source and API design
+
+I query the Guardian Content API `/search` endpoint using multiple AI-related search terms. For each month in the date window:
+
+- I fetch **all available pages**
+- for **each search term**
+- then **union** the results and **deduplicate by article ID**
+
+This produces a full monthly AI-related article corpus under the chosen search-term definition.
+
+## Key steps
+
+1. Create a month-by-month sequence across the date window.
+2. For each month and each AI-related search term, request all pages from the Guardian `/search` endpoint.
+3. Parse the JSON responses into an article-level dataset containing article metadata, text fields, keyword tags, and editorial-format tags.
+4. Deduplicate articles by Guardian article ID across search terms.
+5. Build monthly summaries for:
+   - total unique article volume
+   - section distribution
+   - section mix over time
+   - keyword tags
+   - editorial-format tags
+   - sentiment over time
+   - sentiment across sections
+
+## Packages
+
+```{python}
+import os, re, time, math
+import html as ihtml
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import requests
+
+try:
+    import statsmodels.api as sm
+    HAS_STATSMODELS = True
+except Exception:
+    HAS_STATSMODELS = False
+
+VADER_PATH = Path("/Users/zihan/UofT/Jsc370/nltk_data/sentiment/vader_lexicon/vader_lexicon.txt")
+
+try:
+    from nltk.sentiment.vader import SentimentIntensityAnalyzer, VaderConstants
+
+    with open(VADER_PATH, "r", encoding="utf-8") as f:
+        lexicon_text = f.read().strip()
+
+    _vader = SentimentIntensityAnalyzer.__new__(SentimentIntensityAnalyzer)
+    _vader.lexicon_file = lexicon_text
+    _vader.lexicon = _vader.make_lex_dict()
+    _vader.constants = VaderConstants()
+
+    HAS_VADER = True
+except Exception as e:
+    _vader = None
+    HAS_VADER = False
+    print("VADER init error:", repr(e))
+
+np.random.seed(int(params["seed"]))
+```
+
+## Helper functions
+
+```{python}
+GUARDIAN_BASE = "https://content.guardianapis.com"
+
+def require_api_key() -> str:
+    key = os.getenv("GUARDIAN_API_KEY", "")
+    if not key:
+        raise RuntimeError(
+            "GUARDIAN_API_KEY is not set. Please set it in your environment before rendering."
+        )
+    return key
+
+
+def strip_html(x: str) -> str:
+    if x is None or (isinstance(x, float) and math.isnan(x)):
+        return ""
+    x = str(x)
+    x = re.sub(r"<[^>]+>", " ", x)
+    x = ihtml.unescape(x)
+    x = re.sub(r"\s+", " ", x).strip()
+    return x
+
+
+def guardian_get_json(path: str = "search", query: dict | None = None,
+                      max_tries: int = 6, timeout_s: int = 30) -> dict:
+    api_key = require_api_key()
+    query = dict(query or {})
+    query["api-key"] = api_key
+
+    url = f"{GUARDIAN_BASE}/{path.lstrip('/')}"
+    headers = {"User-Agent": "JSC370-midterm-project"}
+
+    for i in range(1, max_tries + 1):
+        try:
+            r = requests.get(url, params=query, headers=headers, timeout=timeout_s)
+        except requests.RequestException:
+            wait = min(2 ** (i - 1), 30)
+            time.sleep(wait)
+            continue
+
+        if r.status_code == 200:
+            return r.json()
+
+        if r.status_code in (429, 500, 502, 503, 504):
+            wait = min(2 ** (i - 1), 30)
+            time.sleep(wait)
+            continue
+
+        raise RuntimeError(f"Guardian API error HTTP {r.status_code}: {r.text[:500]}")
+
+    raise RuntimeError("Guardian API request failed after retries.")
+
+
+def month_table(from_date: str, to_date: str) -> pd.DataFrame:
+    start = pd.to_datetime(from_date)
+    end = pd.to_datetime(to_date)
+
+    month_starts = pd.date_range(
+        start=start.replace(day=1),
+        end=end.replace(day=1),
+        freq="MS"
+    )
+    month_ends = month_starts + pd.offsets.MonthEnd(0)
+    month_ends = month_ends.where(month_ends <= end, end)
+
+    return pd.DataFrame({
+        "month_start": pd.to_datetime(month_starts),
+        "month_end": pd.to_datetime(month_ends)
+    })
+
+
+def tags_to_list(tags: list, tag_type: str) -> list[str]:
+    if not tags:
+        return []
+    out = []
+    for t in tags:
+        if (t or {}).get("type") == tag_type:
+            title = (t or {}).get("webTitle")
+            if title:
+                out.append(title)
+    return out
+
+
+def parse_results(results: list, source_query: str) -> pd.DataFrame:
+    rows = []
+
+    for x in results:
+        fields = x.get("fields", {}) or {}
+        tags = x.get("tags", []) or []
+
+        pub_dt = pd.to_datetime(
+            x.get("webPublicationDate", None),
+            utc=True,
+            errors="coerce"
+        )
+        pub_date = pub_dt.date() if pd.notnull(pub_dt) else pd.NaT
+
+        headline = fields.get("headline") or x.get("webTitle") or ""
+        trail = strip_html(fields.get("trailText") or "")
+
+        rows.append({
+            "id": x.get("id"),
+            "source_query": source_query,
+            "section_id": x.get("sectionId"),
+            "section_name": x.get("sectionName"),
+            "pillar_id": x.get("pillarId"),
+            "pillar_name": x.get("pillarName"),
+            "web_url": x.get("webUrl"),
+            "web_title": x.get("webTitle"),
+            "publication_datetime_utc": pub_dt,
+            "publication_date": pub_date,
+            "headline": headline,
+            "trail_text": trail,
+            "byline": fields.get("byline"),
+            "wordcount": pd.to_numeric(fields.get("wordcount"), errors="coerce"),
+            "keywords": tags_to_list(tags, "keyword"),
+            "format_tags": tags_to_list(tags, "tone")
+        })
+
+    return pd.DataFrame(rows)
+
+
+def fetch_month_page(from_date: str, to_date: str, q: str, page_size: int,
+                     section: str, order_by: str, show_fields: str, show_tags: str,
+                     page: int = 1) -> tuple[int, int, pd.DataFrame]:
+    params_q = {
+        "q": q,
+        "from-date": from_date,
+        "to-date": to_date,
+        "page-size": int(page_size),
+        "page": int(page),
+        "order-by": order_by,
+        "show-fields": show_fields,
+        "show-tags": show_tags
+    }
+    if section:
+        params_q["section"] = section
+
+    dat = guardian_get_json("search", params_q)
+    resp = dat.get("response", {})
+    total = int(resp.get("total", 0))
+    pages = int(resp.get("pages", 1))
+    results = resp.get("results", []) or []
+
+    df = parse_results(results, source_query=q)
+    return total, pages, df
+
+
+def fetch_month_query_all_pages(from_date: str, to_date: str, q: str, page_size: int,
+                                section: str, order_by: str, show_fields: str, show_tags: str,
+                                sleep_s: float = 1.05) -> pd.DataFrame:
+    total, pages, df1 = fetch_month_page(
+        from_date=from_date,
+        to_date=to_date,
+        q=q,
+        page_size=page_size,
+        section=section,
+        order_by=order_by,
+        show_fields=show_fields,
+        show_tags=show_tags,
+        page=1
+    )
+
+    dfs = [df1]
+
+    for p in range(2, pages + 1):
+        _, _, dfi = fetch_month_page(
+            from_date=from_date,
+            to_date=to_date,
+            q=q,
+            page_size=page_size,
+            section=section,
+            order_by=order_by,
+            show_fields=show_fields,
+            show_tags=show_tags,
+            page=p
+        )
+        dfs.append(dfi)
+        time.sleep(float(sleep_s))
+
+    out = pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
+    out = out.drop_duplicates(subset=["id"])
+    return out
+
+
+def fetch_month_union(from_date: str, to_date: str, search_terms: list[str], page_size: int,
+                      section: str, order_by: str, show_fields: str, show_tags: str,
+                      sleep_s: float = 1.05) -> pd.DataFrame:
+    dfs = []
+
+    for term in search_terms:
+        dfi = fetch_month_query_all_pages(
+            from_date=from_date,
+            to_date=to_date,
+            q=term,
+            page_size=page_size,
+            section=section,
+            order_by=order_by,
+            show_fields=show_fields,
+            show_tags=show_tags,
+            sleep_s=sleep_s
+        )
+        dfs.append(dfi)
+
+    out = pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
+    out = out.drop_duplicates(subset=["id"]).reset_index(drop=True)
+    return out
+```
+
+# Data acquisition
+
+```{python}
+data_dir = Path("data")
+data_dir.mkdir(parents=True, exist_ok=True)
+
+month_cache_dir = data_dir / "guardian_month_cache"
+month_cache_dir.mkdir(parents=True, exist_ok=True)
+
+articles_path = data_dir / "guardian_articles_full.pkl"
+monthly_counts_path = data_dir / "guardian_monthly_counts_full.csv"
+
+refresh = bool(params.get("refresh_data", False))
+
+if (not refresh) and articles_path.exists() and monthly_counts_path.exists():
+    articles = pd.read_pickle(articles_path)
+    monthly_counts = pd.read_csv(monthly_counts_path, parse_dates=["month"])
+else:
+    mt = month_table(params["from_date"], params["to_date"])
+    month_frames = []
+
+    for _, row in mt.iterrows():
+        m_from = row["month_start"].strftime("%Y-%m-%d")
+        m_to = row["month_end"].strftime("%Y-%m-%d")
+        month_key = row["month_start"].strftime("%Y_%m")
+        cache_file = month_cache_dir / f"guardian_articles_{month_key}.pkl"
+
+        print(f"Processing {month_key} ...")
+
+        if (not refresh) and cache_file.exists():
+            dfi = pd.read_pickle(cache_file)
+        else:
+            dfi = fetch_month_union(
+                from_date=m_from,
+                to_date=m_to,
+                search_terms=params["search_terms"],
+                page_size=int(params["api_page_size"]),
+                section=params["use_section"],
+                order_by=params["order_by"],
+                show_fields=params["show_fields"],
+                show_tags=params["show_tags"],
+                sleep_s=float(params["sleep_s"])
+            )
+            dfi.to_pickle(cache_file)
+
+        month_stamp = row["month_start"].to_period("M").to_timestamp()
+        dfi["month"] = month_stamp
+        dfi["year"] = month_stamp.year
+        month_frames.append(dfi)
+
+    articles = pd.concat(month_frames, ignore_index=True) if month_frames else pd.DataFrame()
+
+    if not articles.empty:
+        articles["publication_date"] = pd.to_datetime(articles["publication_date"], errors="coerce")
+        articles = articles.drop_duplicates(subset=["id"]).reset_index(drop=True)
+
+    monthly_counts = (
+        articles
+        .groupby("month", as_index=False)
+        .agg(total_hits=("id", "nunique"))
+        .sort_values("month")
+    )
+
+    full_months = month_table(params["from_date"], params["to_date"])[["month_start"]].copy()
+    full_months["month"] = full_months["month_start"].dt.to_period("M").dt.to_timestamp()
+    full_months = full_months[["month"]]
+
+    monthly_counts = (
+        full_months
+        .merge(monthly_counts, on="month", how="left")
+        .fillna({"total_hits": 0})
+    )
+    monthly_counts["total_hits"] = monthly_counts["total_hits"].astype(int)
+
+    articles.to_pickle(articles_path)
+    monthly_counts.to_csv(monthly_counts_path, index=False)
+
+n_articles = int(articles["id"].nunique()) if not articles.empty else 0
+
+monthly_counts.head(), articles.head()
+```
+
+## Broad and strict corpus definitions
+
+The full downloaded dataset is treated as a **broad AI-related search corpus**.  
+To improve precision, I also define a **strict corpus** using article keywords and headline/trail-text pattern matching. This allows me to compare a broad search-term corpus with a narrower subset that is more likely to represent core AI coverage.
+
+```{python}
+def has_ai_keyword(keywords):
+    kws = [str(k).lower() for k in (keywords or [])]
+    target_terms = {
+        "ai (artificial intelligence)",
+        "artificial intelligence",
+        "machine learning",
+        "chatgpt",
+        "large language models",
+        "large language model",
+        "generative ai",
+        "deep learning"
+    }
+    return any(k in target_terms for k in kws)
+
+AI_PATTERNS = [
+    r"\bartificial intelligence\b",
+    r"\bmachine learning\b",
+    r"\bgenerative ai\b",
+    r"\bchatgpt\b",
+    r"\blarge language model(s)?\b",
+    r"\bllm(s)?\b",
+    r"\bdeep learning\b",
+    r"\bneural network(s)?\b"
+]
+
+def has_ai_text_signal(text):
+    text = (text or "").lower()
+    return any(re.search(p, text) for p in AI_PATTERNS)
+
+articles["headline_trail_text"] = (
+    articles["headline"].fillna("").astype(str)
+    + " "
+    + articles["trail_text"].fillna("").astype(str)
+)
+
+articles["ai_keyword_hit"] = articles["keywords"].apply(has_ai_keyword)
+articles["ai_text_hit"] = articles["headline_trail_text"].apply(has_ai_text_signal)
+articles["ai_strict"] = articles["ai_keyword_hit"] | articles["ai_text_hit"]
+
+articles_strict = articles[articles["ai_strict"]].copy()
+
+monthly_counts_strict = (
+    articles_strict
+    .groupby("month", as_index=False)
+    .agg(total_hits=("id", "nunique"))
+    .sort_values("month")
+)
+
+full_months = month_table(params["from_date"], params["to_date"])[["month_start"]].copy()
+full_months["month"] = full_months["month_start"].dt.to_period("M").dt.to_timestamp()
+full_months = full_months[["month"]]
+
+monthly_counts_strict = (
+    full_months
+    .merge(monthly_counts_strict, on="month", how="left")
+    .fillna({"total_hits": 0})
+)
+monthly_counts_strict["total_hits"] = monthly_counts_strict["total_hits"].astype(int)
+
+strict_overview = pd.DataFrame({
+    "Corpus": ["Broad search corpus", "Strict corpus"],
+    "Unique articles": [
+        articles["id"].nunique(),
+        articles_strict["id"].nunique()
+    ],
+    "Share of broad corpus": [
+        1.0,
+        articles_strict["id"].nunique() / articles["id"].nunique() if articles["id"].nunique() > 0 else np.nan
+    ]
+})
+
+strict_overview
+```
+
+# Preliminary Results
+
+## Corpus precision check: broad vs strict
+
+I compare the broad search-term corpus with a stricter subset based on AI-related keywords and text signals in the headline and trail text. The strict corpus is intended to reduce incidental mentions and better approximate core AI coverage.
+
+```{python}
+compare_counts = monthly_counts.merge(
+    monthly_counts_strict,
+    on="month",
+    how="left",
+    suffixes=("_broad", "_strict")
+)
+
+plt.figure(figsize=(10, 4))
+plt.plot(compare_counts["month"], compare_counts["total_hits_broad"], marker="o", linewidth=1.4, label="Broad corpus")
+plt.plot(compare_counts["month"], compare_counts["total_hits_strict"], marker="o", linewidth=1.4, label="Strict corpus")
+
+plt.title("Monthly AI-related article volume: broad vs strict corpus")
+plt.xlabel("")
+plt.ylabel("Unique articles in month")
+plt.legend()
+plt.tight_layout()
+plt.show()
+```
+
+## Dataset overview
+
+```{python}
+#| label: overview-table
+
+overview = pd.DataFrame({
+    "Metric": [
+        "Search terms",
+        "Section filter",
+        "Date window",
+        "Months",
+        "Total unique articles downloaded",
+        "Uses all pages?",
+        "Deduplicated by article ID?"
+    ],
+    "Value": [
+        ", ".join(params["search_terms"]),
+        params["use_section"] if params["use_section"] else "None",
+        f'{params["from_date"]} to {params["to_date"]}',
+        len(monthly_counts),
+        f"{n_articles:,}",
+        "Yes",
+        "Yes"
+    ]
+})
+overview
+```
+
+## Coverage volume over time (monthly unique article counts in the search corpus)
+
+```{python}
+#| label: fig-monthly-volume
+
+x = pd.to_datetime(monthly_counts["month"])
+y = monthly_counts["total_hits"].astype(int)
+
+plt.figure(figsize=(10, 4))
+plt.plot(x, y, marker="o", linewidth=1.5)
+plt.title("Monthly AI-related Guardian article volume")
+plt.xlabel("")
+plt.ylabel("Unique articles in month")
+plt.tight_layout()
+plt.show()
+```
+
+## A simple trend model for monthly volume
+```{python}
+#| label: volume-model
+df = monthly_counts.copy()
+df = df.sort_values("month")
+df["t"] = np.arange(1, len(df) + 1)
+df["total_hits"] = df["total_hits"].astype(float)
+
+if HAS_STATSMODELS:
+    X = sm.add_constant(df["t"])
+    model = sm.OLS(df["total_hits"], X).fit()
+    out = pd.DataFrame({
+        "term": ["Intercept", "t"],
+        "estimate": model.params.values,
+        "std_error": model.bse.values,
+        "p_value": model.pvalues.values
+    })
+else:
+    from sklearn.linear_model import LinearRegression
+    lr = LinearRegression().fit(df[["t"]], df["total_hits"])
+    out = pd.DataFrame({
+        "term": ["Intercept", "t"],
+        "estimate": [lr.intercept_, lr.coef_[0]],
+        "std_error": [np.nan, np.nan],
+        "p_value": [np.nan, np.nan]
+    })
+
+out
+
+```
+
+## Section distribution
+
+```{python}
+#| label: section-table
+
+if articles.empty:
+    raise RuntimeError("No articles were downloaded. Check your date range, API key, or search terms.")
+
+top_sections = (
+    articles["section_name"]
+    .fillna("Unknown")
+    .value_counts()
+    .reset_index()
+)
+top_sections.columns = ["section_name", "n"]
+top_sections["share"] = top_sections["n"] / top_sections["n"].sum()
+top_sections.head(15)
+```
+
+```{python}
+#| label: fig-sections
+
+plot_sections = top_sections.head(12).iloc[::-1]
+
+plt.figure(figsize=(9, 5))
+plt.barh(plot_sections["section_name"], plot_sections["n"])
+plt.title("Most common sections in full AI-related corpus")
+plt.xlabel("Number of articles")
+plt.ylabel("")
+plt.tight_layout()
+plt.show()
+```
+
+## Section mix over time
+
+```{python}
+#| label: fig-section-mix
+section_month = (
+    articles
+    .dropna(subset=["month", "section_name"])
+    .groupby(["month", "section_name"])
+    .size()
+    .reset_index(name="n")
+)
+
+section_month["share"] = (
+    section_month.groupby("month")["n"]
+    .transform(lambda s: s / s.sum())
+)
+
+top_section_names = top_sections["section_name"].head(6).tolist()
+section_month_top = section_month[
+    section_month["section_name"].isin(top_section_names)
+].copy()
+
+section_month_top.head()
+```
+
+```{python}
+plt.figure(figsize=(10, 5))
+for sec in top_section_names:
+    tmp = section_month_top[section_month_top["section_name"] == sec]
+    plt.plot(tmp["month"], tmp["share"], marker="o", linewidth=1.4, label=sec)
+
+plt.title("Section share over time in AI-related Guardian coverage")
+plt.xlabel("")
+plt.ylabel("Share of monthly articles")
+plt.legend()
+plt.tight_layout()
+plt.show()
+```
+
+## Guardian editorial-format tags
+
+```{python}
+#| label: tone-analysis
+
+format_rows = []
+for _, r in articles[["id", "format_tags"]].iterrows():
+    for tag in (r["format_tags"] or []):
+        format_rows.append({"id": r["id"], "format_tag": tag})
+
+format_df = pd.DataFrame(format_rows)
+
+if not format_df.empty:
+    format_counts = format_df["format_tag"].value_counts().reset_index()
+    format_counts.columns = ["format_tag", "n"]
+else:
+    format_counts = pd.DataFrame(columns=["format_tag", "n"])
+
+format_counts.head(15)
+```
+
+```{python}
+#| label: fig-format-tags
+if not format_counts.empty:
+    plot_format = format_counts.head(12).iloc[::-1]
+
+    plt.figure(figsize=(9, 5))
+    plt.barh(plot_format["format_tag"], plot_format["n"])
+    plt.title("Guardian editorial-format tags")
+    plt.xlabel("Count")
+    plt.ylabel("")
+    plt.tight_layout()
+    plt.show()
+```
+
+## Keyword tags
+
+```{python}
+#| label: keyword-analysis
+
+kw_rows = []
+for _, r in articles[["id", "keywords"]].iterrows():
+    for k in (r["keywords"] or []):
+        kw_rows.append({"id": r["id"], "keyword": k})
+
+kw_df = pd.DataFrame(kw_rows)
+
+if not kw_df.empty:
+    kw_counts = kw_df["keyword"].value_counts().reset_index()
+    kw_counts.columns = ["keyword", "n"]
+else:
+    kw_counts = pd.DataFrame(columns=["keyword", "n"])
+
+kw_counts.head(20)
+```
+
+```{python}
+#| label: fig-keywords
+
+if not kw_counts.empty:
+    plot_kw = kw_counts.head(20).iloc[::-1]
+
+    plt.figure(figsize=(9, 7))
+    plt.barh(plot_kw["keyword"], plot_kw["n"])
+    plt.title("Most common keyword tags")
+    plt.xlabel("Count")
+    plt.ylabel("")
+    plt.tight_layout()
+    plt.show()
+```
+
+## Sentiment over time
+
+This section uses **VADER** sentiment on headline + trail text.
+
+If you see `HAS_VADER = False`, check the VADER package import and the local lexicon path:
+
+```{python}
+#| label: sentiment
+
+if HAS_VADER:
+    def vader_score(text: str) -> float:
+        text = (text or "").strip()
+        if not text:
+            return np.nan
+        return float(_vader.polarity_scores(text)["compound"])
+
+    articles_sent = articles.copy()
+    text = (
+        articles_sent["headline"].fillna("").astype(str)
+        + " "
+        + articles_sent["trail_text"].fillna("").astype(str)
+    )
+    articles_sent["sentiment"] = text.apply(vader_score)
+
+    sent_by_month = (
+        articles_sent
+        .groupby("month", as_index=False)
+        .agg(
+            n_articles=("id", "count"),
+            mean_sentiment=("sentiment", "mean"),
+            median_sentiment=("sentiment", "median")
+        )
+        .sort_values("month")
+    )
+else:
+    sent_by_month = None
+
+sent_by_month.head() if sent_by_month is not None else "VADER not available"
+```
+
+```{python}
+#| label: fig-sentiment
+
+if sent_by_month is not None and not sent_by_month.empty:
+    plt.figure(figsize=(10, 4))
+    plt.plot(sent_by_month["month"], sent_by_month["mean_sentiment"], marker="o", linewidth=1.5)
+    plt.title("Mean sentiment over time (headline + trail text)")
+    plt.xlabel("")
+    plt.ylabel("Mean VADER compound score")
+    plt.tight_layout()
+    plt.show()
+```
+
+## Sentiment across sections
+
+```{python}
+if sent_by_month is not None and not articles.empty:
+    articles_sent = articles.copy()
+    text = (
+        articles_sent["headline"].fillna("").astype(str)
+        + " "
+        + articles_sent["trail_text"].fillna("").astype(str)
+    )
+    articles_sent["sentiment"] = text.apply(vader_score)
+
+    sent_by_section = (
+        articles_sent
+        .dropna(subset=["section_name", "sentiment"])
+        .groupby("section_name", as_index=False)
+        .agg(
+            n_articles=("id", "count"),
+            mean_sentiment=("sentiment", "mean")
+        )
+        .sort_values("n_articles", ascending=False)
+    )
+
+    sent_by_section_top = sent_by_section.head(12)
+else:
+    sent_by_section_top = None
+
+sent_by_section_top if sent_by_section_top is not None else "VADER not available"
+```
+
+```{python}
+if sent_by_section_top is not None and not sent_by_section_top.empty:
+    plot_sent_sec = sent_by_section_top.iloc[::-1]
+
+    plt.figure(figsize=(9, 5))
+    plt.barh(plot_sent_sec["section_name"], plot_sent_sec["mean_sentiment"])
+    plt.title("Mean sentiment by section")
+    plt.xlabel("Mean VADER compound score")
+    plt.ylabel("")
+    plt.tight_layout()
+    plt.show()
+```
+
+# Summary
+
+## What this notebook now does
+
+- Downloads the **full monthly corpus** of AI-related Guardian articles under the chosen search-term definition
+- Removes duplicates across search terms using article ID
+- Computes:
+  - monthly volume
+  - section distribution
+  - section mix over time
+  - editorial-format tags
+  - sentiment over time
+  - sentiment across sections
+
+## Remaining limitation
+
+This still defines “AI coverage” using a **search-term corpus**, not a manually labeled gold-standard dataset. That is a much smaller gap than before, but it is still the main conceptual limitation.
+
+## Plan for the final project (ML + communication)
+
+For the final project, I will:
+
+1. **Improve representativeness**
+   - improve corpus precision (within API limits) or use stratified sampling across sections
+
+2. **NLP / ML**
+   - train a classifier to predict section (or tone tags) from headline + trail text
+   - compare classic models (logistic regression / SVM) with modern embeddings
+
+3. **Interactive presentation**
+   - publish as a Quarto website (GitHub Pages)
+   - add interactive plots and a query selector
