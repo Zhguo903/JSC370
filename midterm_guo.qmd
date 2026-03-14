@@ -21,7 +21,7 @@ execute:
 Fetches data from the Guardian API by my key.
 ```{python}
 import os
-os.environ["GUARDIAN_API_KEY"] = "fb7080d7-f3a8-487d-8396-631bb3f9beeb"
+os.environ["GUARDIAN_API_KEY"] = "YOUR_API_KEY"
 ```
 
 # Introduction
