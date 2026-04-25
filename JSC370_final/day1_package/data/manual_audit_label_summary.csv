@@ -1,0 +1,7 @@
+corpus_group,reviewer_label,count,share_within_group
+broad_not_strict,core_ai_article,1,0.01
+broad_not_strict,incidental_ai_mention,99,0.99
+broad_not_strict,unclear,0,0.0
+strict,core_ai_article,80,0.8
+strict,incidental_ai_mention,20,0.2
+strict,unclear,0,0.0
