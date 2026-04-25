@@ -1,0 +1,23 @@
+---
+title: "Interactive Visualizations"
+---
+
+The figures on this page are interactive Plotly visualizations. Use the legend to hide or show groups, hover over points to inspect values, and zoom into specific periods.
+
+## Monthly AI-related article volume
+
+This chart compares the broad search corpus with the stricter AI-focused corpus over time.
+
+<iframe src="viz_monthly_volume.html" width="100%" height="620" style="border: none;"></iframe>
+
+## Section composition over time
+
+This chart shows how the section distribution of strict-corpus AI articles changes over time.
+
+<iframe src="viz_section_share.html" width="100%" height="620" style="border: none;"></iframe>
+
+## Topic prevalence over time
+
+This chart shows how LDA topic prevalence changes over time in the strict AI corpus.
+
+<iframe src="viz_topic_prevalence.html" width="100%" height="620" style="border: none;"></iframe>

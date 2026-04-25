@@ -1,0 +1,93 @@
+[
+  {
+    "objectID": "report.html",
+    "href": "report.html",
+    "title": "From Technology Story to Public Issue: Modeling The Guardian’s AI Coverage, 2021–2025",
+    "section": "",
+    "text": "Artificial intelligence is not only a technical topic. Since the rise of public-facing generative AI tools, AI has become linked to labor markets, education, copyright, misinformation, elections, regulation, business competition, creative industries, and everyday culture. News coverage matters because it shapes how the public encounters these risks and opportunities. The Guardian is a useful case for studying this shift because its AI-related articles appear across technology, business, politics, world news, opinion, culture, and lifestyle sections rather than only in technology reporting.\nThis final project builds on the midterm project by moving from descriptive corpus analysis to validation and modeling. The main research question is:\n\nHow did The Guardian’s AI-related coverage change between 2021 and 2025, and can article text and metadata predict whether an AI-related article is framed as a technology/business issue or as a broader public issue?\n\nI test four hypotheses. First, AI-related coverage increased over time. Second, AI coverage appears across many sections rather than being limited to the Technology section. Third, article text and metadata can predict whether an article belongs to a Technology/Business frame or a broader public-issue frame. Fourth, topic modeling will reveal several recurring themes, including AI tools, business competition, regulation, education, copyright, labor, and risk."
+  },
+  {
+    "objectID": "report.html#data-source-and-corpus-construction",
+    "href": "report.html#data-source-and-corpus-construction",
+    "title": "From Technology Story to Public Issue: Modeling The Guardian’s AI Coverage, 2021–2025",
+    "section": "Data source and corpus construction",
+    "text": "Data source and corpus construction\nThe data come from the Guardian Content API. I query articles month by month from January 2021 through December 2025. The final search strategy expands the original midterm search terms by combining general AI terms, technical terms, and public-facing generative AI terms. The query terms include artificial intelligence, machine learning, generative AI, large language model, ChatGPT, deep learning, neural network, LLM, OpenAI, Google Gemini, Google DeepMind, Claude AI, DALL-E, and Midjourney. I intentionally avoid using standalone “AI” as a broad API query because it can be overinclusive, but I allow standalone AI in stricter headline, trail-text, and tag matching when it appears with relevant context.\nArticles are deduplicated by Guardian article ID. The broad corpus contains all articles retrieved by the union of search terms. The strict corpus keeps only articles with strong AI signals in Guardian keyword tags or in headline and trail text. This broad-versus-strict design separates a high-recall search environment from a higher-precision approximation of core AI coverage."
+  },
+  {
+    "objectID": "report.html#manual-audit",
+    "href": "report.html#manual-audit",
+    "title": "From Technology Story to Public Issue: Modeling The Guardian’s AI Coverage, 2021–2025",
+    "section": "Manual audit",
+    "text": "Manual audit\nBecause the strict corpus is rule-based rather than a fully hand-labeled gold-standard dataset, I manually audit a sample of articles. The audit compares 100 strict-corpus articles with 100 broad-but-not-strict articles. Each article is labeled as core_ai_article, incidental_ai_mention, or unclear. This check evaluates whether the strict corpus improves precision relative to the broad search corpus."
+  },
+  {
+    "objectID": "report.html#prediction-task-and-feature-engineering",
+    "href": "report.html#prediction-task-and-feature-engineering",
+    "title": "From Technology Story to Public Issue: Modeling The Guardian’s AI Coverage, 2021–2025",
+    "section": "Prediction task and feature engineering",
+    "text": "Prediction task and feature engineering\nThe main prediction task classifies whether a strict-corpus AI article is framed as a Technology/Business story or as a broader public-issue story. The target variable is:\n\ntech_business_frame = 1 for articles in the Technology or Business section.\ntech_business_frame = 0 for articles in all other sections.\n\nThe model uses headline and trail-text TF-IDF features, time variables, word count, headline and trail-text length, keyword indicators, editorial-format indicators, tag counts, and VADER sentiment. Section name is excluded from the predictors to avoid data leakage because the target variable is derived from section membership.\nI compare a majority-class baseline, logistic regression with TF-IDF, Random Forest, and XGBoost when the package is available. The data are split into stratified training and testing sets, with 80% for training and 20% for testing. Model performance is evaluated using accuracy, precision, recall, F1, and ROC-AUC. Variable importance is reported using tree-based feature importance or, for logistic regression, absolute coefficient magnitude."
+  },
+  {
+    "objectID": "report.html#topic-modeling-and-interactive-visualization",
+    "href": "report.html#topic-modeling-and-interactive-visualization",
+    "title": "From Technology Story to Public Issue: Modeling The Guardian’s AI Coverage, 2021–2025",
+    "section": "Topic modeling and interactive visualization",
+    "text": "Topic modeling and interactive visualization\nTo study themes in AI coverage, I also fit an LDA topic model using the strict corpus headline and trail text. The topic model is used to identify recurring themes and to track topic prevalence over time. Interactive Plotly visualizations are provided on the project website for monthly article volume, section composition over time, and LDA topic prevalence over time."
+  },
+  {
+    "objectID": "report.html#generated-results-summary",
+    "href": "report.html#generated-results-summary",
+    "title": "From Technology Story to Public Issue: Modeling The Guardian’s AI Coverage, 2021–2025",
+    "section": "Generated results summary",
+    "text": "Generated results summary\nThe expanded final search strategy produced 40,232 broad-corpus articles and 3,120 strict-corpus articles across 60 months. The strict corpus represented 7.76% of the broad corpus. Within the strict corpus, 1,457 articles were labeled as Technology/Business frame articles and 1,663 articles were labeled as broader public-issue frame articles.\nThe manual audit found that 80.0% of sampled strict-corpus articles were core AI articles, compared with 1.0% of sampled broad-but-not-strict articles. This supports using the strict corpus as the main dataset for modeling.\nThe best-performing model by test-set F1 was XGBoost, with accuracy 0.764, F1 0.750, and ROC-AUC 0.847.\nThe LDA model separated the strict corpus into themes such as AI tools and ChatGPT; Topic 2: chatgpt, images, just; Topic 3: openai, musk, media; Topic 4: intelligence, artificial, artificial intelligence; Topic 5: nvidia, company, openai; Education and work.\n\nTable 1. Corpus construction summary\n\n\n\nMetric\nValue\n\n\n\n\nBroad corpus articles\n40,232\n\n\nStrict corpus articles\n3,120\n\n\nStrict share of broad corpus\n7.76%\n\n\nMonths covered\n60\n\n\nTechnology/Business frame articles\n1,457\n\n\nBroader public-issue frame articles\n1,663\n\n\n\n\n\nTable 2. Manual audit summary\n\n\n\n\n\n\n\n\n\nAudit group\nLabeled articles\nCore AI articles\nCore AI share\n\n\n\n\nBroad but not strict\n100\n1\n1.0%\n\n\nStrict corpus\n100\n80\n80.0%\n\n\n\n\n\nTable 3. Classification model performance on the test set\n\n\n\n\n\n\n\n\n\n\n\nModel\nAccuracy\nPrecision\nRecall\nF1\nROC-AUC\n\n\n\n\nXGBoost\n0.764\n0.742\n0.759\n0.75\n0.847\n\n\nLogistic regression\n0.745\n0.717\n0.749\n0.733\n0.838\n\n\nRandom forest\n0.737\n0.728\n0.698\n0.712\n0.837\n\n\nMajority baseline\n0.534\n0\n0\n0\n0.5\n\n\n\n\n\n\nFigure 0. Manual audit precision check.\n\n\nFigure 0 shows that the strict corpus is substantially more precise than the broad-but-not-strict set. This supports using the strict corpus for the final modeling and topic analysis.\n\n\n\nFigure 1. Monthly AI-related article volume in the broad and strict corpora.\n\n\nFigure 1 shows the monthly volume of AI-related articles. The broad corpus captures the wider search environment, while the strict corpus captures a narrower set of articles with stronger AI relevance.\n\n\n\nFigure 2. Most common sections in the strict AI corpus.\n\n\nFigure 2 shows that strict-corpus AI articles are distributed across multiple sections. This supports the interpretation that AI is not only a technology story but also a broader public issue.\n\n\n\nFigure 3. Section share over time in the strict AI corpus.\n\n\nFigure 3 shows that section composition changes over time. This is consistent with the idea that the public meaning of AI shifts across technology, business, politics, opinion, world news, and cultural contexts.\n\n\n\nFigure 4. Classification model performance.\n\n\nFigure 4 compares the baseline and machine-learning models on the test set. A model that improves on the majority baseline indicates that article text and metadata contain information about whether an AI article is framed as a Technology/Business story or a broader public-issue story.\n\n\n\nFigure 5. Confusion matrix for the selected model.\n\n\nFigure 5 shows the selected model’s classification errors. The confusion matrix is useful because the two classes are substantively different: Technology/Business framing reflects narrower industry and technical coverage, while broader public-issue framing reflects social, political, cultural, and institutional coverage.\n\n\n\nFigure 6. Variable importance for the selected model.\n\n\nFigure 6 reports the most influential features. These features help interpret which terms and metadata patterns distinguish Technology/Business AI coverage from broader public-issue AI coverage.\n\n\n\nFigure 7. LDA topic prevalence over time in the strict AI corpus.\n\n\nFigure 7 shows how topic prevalence changes over time. The LDA model supports the conclusion that AI coverage is not a single homogeneous category. Instead, it contains multiple recurring themes, including tools, business competition, regulation, education, labor, copyright, and risk-related coverage. The interactive version of this figure is available on the website."
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "From Technology Story to Public Issue",
+    "section": "",
+    "text": "This project studies how AI-related coverage in The Guardian changed between 2021 and 2025. I use the Guardian Content API to construct a broad AI-related search corpus and a stricter AI-focused corpus. The final analysis focuses on the strict corpus because a manual audit shows that it has much higher precision than the broad-but-not-strict search results.\nThe main research question is:"
+  },
+  {
+    "objectID": "index.html#main-findings",
+    "href": "index.html#main-findings",
+    "title": "From Technology Story to Public Issue",
+    "section": "Main findings",
+    "text": "Main findings\n\nThe expanded search strategy produced a large AI-related corpus across 60 months.\nThe strict corpus is much more precise than the broad search corpus based on the manual audit.\nAI-related stories appear across many sections, not only Technology.\nClassification models use text, metadata, keyword indicators, and sentiment to predict whether an article belongs to a Technology/Business frame or a broader public-issue frame.\nLDA topic modeling identifies recurring themes in AI coverage, such as tools, business competition, regulation, education, copyright, labor, and risk."
+  },
+  {
+    "objectID": "index.html#links",
+    "href": "index.html#links",
+    "title": "From Technology Story to Public Issue",
+    "section": "Links",
+    "text": "Links\n\nInteractive visualizations\nFull report\nDownload the PDF report\nGitHub repository"
+  },
+  {
+    "objectID": "viz.html",
+    "href": "viz.html",
+    "title": "Interactive Visualizations",
+    "section": "",
+    "text": "The figures on this page are interactive Plotly visualizations. Use the legend to hide or show groups, hover over points to inspect values, and zoom into specific periods."
+  },
+  {
+    "objectID": "viz.html#monthly-ai-related-article-volume",
+    "href": "viz.html#monthly-ai-related-article-volume",
+    "title": "Interactive Visualizations",
+    "section": "Monthly AI-related article volume",
+    "text": "Monthly AI-related article volume\nThis chart compares the broad search corpus with the stricter AI-focused corpus over time."
+  },
+  {
+    "objectID": "viz.html#section-composition-over-time",
+    "href": "viz.html#section-composition-over-time",
+    "title": "Interactive Visualizations",
+    "section": "Section composition over time",
+    "text": "Section composition over time\nThis chart shows how the section distribution of strict-corpus AI articles changes over time."
+  },
+  {
+    "objectID": "viz.html#topic-prevalence-over-time",
+    "href": "viz.html#topic-prevalence-over-time",
+    "title": "Interactive Visualizations",
+    "section": "Topic prevalence over time",
+    "text": "Topic prevalence over time\nThis chart shows how LDA topic prevalence changes over time in the strict AI corpus."
+  }
+]

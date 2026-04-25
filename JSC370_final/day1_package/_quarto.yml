@@ -1,0 +1,30 @@
+project:
+  type: website
+  output-dir: docs
+  render:
+    - index.qmd
+    - viz.qmd
+    - report.qmd
+
+website:
+  title: "Modeling The Guardian's AI Coverage"
+  navbar:
+    left:
+      - href: index.qmd
+        text: Home
+      - href: viz.qmd
+        text: Interactive Visualizations
+      - href: report.qmd
+        text: Report
+  page-footer:
+    center: "JSC370 Final Project"
+
+format:
+  html:
+    theme: Sketchy
+    toc: true
+    number-sections: false
+  pdf:
+    documentclass: article
+    geometry: margin=1in
+    fontsize: 10pt

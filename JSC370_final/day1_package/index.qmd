@@ -1,0 +1,25 @@
+---
+title: "From Technology Story to Public Issue"
+subtitle: "Modeling The Guardian's AI Coverage, 2021–2025"
+---
+
+This project studies how AI-related coverage in *The Guardian* changed between 2021 and 2025. I use the Guardian Content API to construct a broad AI-related search corpus and a stricter AI-focused corpus. The final analysis focuses on the strict corpus because a manual audit shows that it has much higher precision than the broad-but-not-strict search results.
+
+The main research question is:
+
+> How did *The Guardian's* AI-related coverage change between 2021 and 2025, and can article text and metadata predict whether an AI-related article is framed as a technology/business issue or as a broader public issue?
+
+## Main findings
+
+- The expanded search strategy produced a large AI-related corpus across 60 months.
+- The strict corpus is much more precise than the broad search corpus based on the manual audit.
+- AI-related stories appear across many sections, not only Technology.
+- Classification models use text, metadata, keyword indicators, and sentiment to predict whether an article belongs to a Technology/Business frame or a broader public-issue frame.
+- LDA topic modeling identifies recurring themes in AI coverage, such as tools, business competition, regulation, education, copyright, labor, and risk.
+
+## Links
+
+- [Interactive visualizations](viz.html)
+- [Full report](report.html)
+- [Download the PDF report](report.pdf)
+- [GitHub repository](https://github.com/Zhguo903/JSC370)

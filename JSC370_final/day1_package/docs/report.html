@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.32">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Zihan Guo">
+
+<title>From Technology Story to Public Issue: Modeling The Guardian’s AI Coverage, 2021–2025 – Modeling The Guardian's AI Coverage</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-067f8ab80d092ae3595f7402c2c9b667.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-1527cf75e32493cb6cf8cd23d860bbb9.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+</head>
+
+<body class="nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">Modeling The Guardian’s AI Coverage</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="./index.html"> 
+<span class="menu-text">Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./viz.html"> 
+<span class="menu-text">Interactive Visualizations</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link active" href="./report.html" aria-current="page"> 
+<span class="menu-text">Report</span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
+  <li><a href="#methods" id="toc-methods" class="nav-link" data-scroll-target="#methods">Methods</a>
+  <ul class="collapse">
+  <li><a href="#data-source-and-corpus-construction" id="toc-data-source-and-corpus-construction" class="nav-link" data-scroll-target="#data-source-and-corpus-construction">Data source and corpus construction</a></li>
+  <li><a href="#manual-audit" id="toc-manual-audit" class="nav-link" data-scroll-target="#manual-audit">Manual audit</a></li>
+  <li><a href="#prediction-task-and-feature-engineering" id="toc-prediction-task-and-feature-engineering" class="nav-link" data-scroll-target="#prediction-task-and-feature-engineering">Prediction task and feature engineering</a></li>
+  <li><a href="#topic-modeling-and-interactive-visualization" id="toc-topic-modeling-and-interactive-visualization" class="nav-link" data-scroll-target="#topic-modeling-and-interactive-visualization">Topic modeling and interactive visualization</a></li>
+  </ul></li>
+  <li><a href="#results" id="toc-results" class="nav-link" data-scroll-target="#results">Results</a>
+  <ul class="collapse">
+  <li><a href="#generated-results-summary" id="toc-generated-results-summary" class="nav-link" data-scroll-target="#generated-results-summary">Generated results summary</a>
+  <ul class="collapse">
+  <li><a href="#table-1.-corpus-construction-summary" id="toc-table-1.-corpus-construction-summary" class="nav-link" data-scroll-target="#table-1.-corpus-construction-summary">Table 1. Corpus construction summary</a></li>
+  <li><a href="#table-2.-manual-audit-summary" id="toc-table-2.-manual-audit-summary" class="nav-link" data-scroll-target="#table-2.-manual-audit-summary">Table 2. Manual audit summary</a></li>
+  <li><a href="#table-3.-classification-model-performance-on-the-test-set" id="toc-table-3.-classification-model-performance-on-the-test-set" class="nav-link" data-scroll-target="#table-3.-classification-model-performance-on-the-test-set">Table 3. Classification model performance on the test set</a></li>
+  </ul></li>
+  </ul></li>
+  <li><a href="#conclusions-and-summary" id="toc-conclusions-and-summary" class="nav-link" data-scroll-target="#conclusions-and-summary">Conclusions and Summary</a></li>
+  </ul>
+<div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="report.pdf"><i class="bi bi-file-pdf"></i>PDF</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">From Technology Story to Public Issue: Modeling The Guardian’s AI Coverage, 2021–2025</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Zihan Guo </p>
+          </div>
+  </div>
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>Artificial intelligence is not only a technical topic. Since the rise of public-facing generative AI tools, AI has become linked to labor markets, education, copyright, misinformation, elections, regulation, business competition, creative industries, and everyday culture. News coverage matters because it shapes how the public encounters these risks and opportunities. <em>The Guardian</em> is a useful case for studying this shift because its AI-related articles appear across technology, business, politics, world news, opinion, culture, and lifestyle sections rather than only in technology reporting.</p>
+<p>This final project builds on the midterm project by moving from descriptive corpus analysis to validation and modeling. The main research question is:</p>
+<blockquote class="blockquote">
+<p>How did <em>The Guardian’s</em> AI-related coverage change between 2021 and 2025, and can article text and metadata predict whether an AI-related article is framed as a technology/business issue or as a broader public issue?</p>
+</blockquote>
+<p>I test four hypotheses. First, AI-related coverage increased over time. Second, AI coverage appears across many sections rather than being limited to the Technology section. Third, article text and metadata can predict whether an article belongs to a Technology/Business frame or a broader public-issue frame. Fourth, topic modeling will reveal several recurring themes, including AI tools, business competition, regulation, education, copyright, labor, and risk.</p>
+</section>
+<section id="methods" class="level1">
+<h1>Methods</h1>
+<section id="data-source-and-corpus-construction" class="level2">
+<h2 class="anchored" data-anchor-id="data-source-and-corpus-construction">Data source and corpus construction</h2>
+<p>The data come from the Guardian Content API. I query articles month by month from January 2021 through December 2025. The final search strategy expands the original midterm search terms by combining general AI terms, technical terms, and public-facing generative AI terms. The query terms include artificial intelligence, machine learning, generative AI, large language model, ChatGPT, deep learning, neural network, LLM, OpenAI, Google Gemini, Google DeepMind, Claude AI, DALL-E, and Midjourney. I intentionally avoid using standalone “AI” as a broad API query because it can be overinclusive, but I allow standalone AI in stricter headline, trail-text, and tag matching when it appears with relevant context.</p>
+<p>Articles are deduplicated by Guardian article ID. The broad corpus contains all articles retrieved by the union of search terms. The strict corpus keeps only articles with strong AI signals in Guardian keyword tags or in headline and trail text. This broad-versus-strict design separates a high-recall search environment from a higher-precision approximation of core AI coverage.</p>
+</section>
+<section id="manual-audit" class="level2">
+<h2 class="anchored" data-anchor-id="manual-audit">Manual audit</h2>
+<p>Because the strict corpus is rule-based rather than a fully hand-labeled gold-standard dataset, I manually audit a sample of articles. The audit compares 100 strict-corpus articles with 100 broad-but-not-strict articles. Each article is labeled as <code>core_ai_article</code>, <code>incidental_ai_mention</code>, or <code>unclear</code>. This check evaluates whether the strict corpus improves precision relative to the broad search corpus.</p>
+</section>
+<section id="prediction-task-and-feature-engineering" class="level2">
+<h2 class="anchored" data-anchor-id="prediction-task-and-feature-engineering">Prediction task and feature engineering</h2>
+<p>The main prediction task classifies whether a strict-corpus AI article is framed as a Technology/Business story or as a broader public-issue story. The target variable is:</p>
+<ul>
+<li><code>tech_business_frame = 1</code> for articles in the Technology or Business section.</li>
+<li><code>tech_business_frame = 0</code> for articles in all other sections.</li>
+</ul>
+<p>The model uses headline and trail-text TF-IDF features, time variables, word count, headline and trail-text length, keyword indicators, editorial-format indicators, tag counts, and VADER sentiment. Section name is excluded from the predictors to avoid data leakage because the target variable is derived from section membership.</p>
+<p>I compare a majority-class baseline, logistic regression with TF-IDF, Random Forest, and XGBoost when the package is available. The data are split into stratified training and testing sets, with 80% for training and 20% for testing. Model performance is evaluated using accuracy, precision, recall, F1, and ROC-AUC. Variable importance is reported using tree-based feature importance or, for logistic regression, absolute coefficient magnitude.</p>
+</section>
+<section id="topic-modeling-and-interactive-visualization" class="level2">
+<h2 class="anchored" data-anchor-id="topic-modeling-and-interactive-visualization">Topic modeling and interactive visualization</h2>
+<p>To study themes in AI coverage, I also fit an LDA topic model using the strict corpus headline and trail text. The topic model is used to identify recurring themes and to track topic prevalence over time. Interactive Plotly visualizations are provided on the project website for monthly article volume, section composition over time, and LDA topic prevalence over time.</p>
+</section>
+</section>
+<section id="results" class="level1">
+<h1>Results</h1>
+<section id="generated-results-summary" class="level2">
+<h2 class="anchored" data-anchor-id="generated-results-summary">Generated results summary</h2>
+<p>The expanded final search strategy produced <strong>40,232</strong> broad-corpus articles and <strong>3,120</strong> strict-corpus articles across <strong>60</strong> months. The strict corpus represented <strong>7.76%</strong> of the broad corpus. Within the strict corpus, <strong>1,457</strong> articles were labeled as Technology/Business frame articles and <strong>1,663</strong> articles were labeled as broader public-issue frame articles.</p>
+<p>The manual audit found that 80.0% of sampled strict-corpus articles were core AI articles, compared with 1.0% of sampled broad-but-not-strict articles. This supports using the strict corpus as the main dataset for modeling.</p>
+<p>The best-performing model by test-set F1 was <strong>XGBoost</strong>, with accuracy 0.764, F1 0.750, and ROC-AUC 0.847.</p>
+<p>The LDA model separated the strict corpus into themes such as AI tools and ChatGPT; Topic 2: chatgpt, images, just; Topic 3: openai, musk, media; Topic 4: intelligence, artificial, artificial intelligence; Topic 5: nvidia, company, openai; Education and work.</p>
+<section id="table-1.-corpus-construction-summary" class="level3">
+<h3 class="anchored" data-anchor-id="table-1.-corpus-construction-summary">Table 1. Corpus construction summary</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Metric</th>
+<th style="text-align: left;">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Broad corpus articles</td>
+<td style="text-align: left;">40,232</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Strict corpus articles</td>
+<td style="text-align: left;">3,120</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Strict share of broad corpus</td>
+<td style="text-align: left;">7.76%</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Months covered</td>
+<td style="text-align: left;">60</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Technology/Business frame articles</td>
+<td style="text-align: left;">1,457</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Broader public-issue frame articles</td>
+<td style="text-align: left;">1,663</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="table-2.-manual-audit-summary" class="level3">
+<h3 class="anchored" data-anchor-id="table-2.-manual-audit-summary">Table 2. Manual audit summary</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 27%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 21%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Audit group</th>
+<th style="text-align: right;">Labeled articles</th>
+<th style="text-align: right;">Core AI articles</th>
+<th style="text-align: left;">Core AI share</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Broad but not strict</td>
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">1.0%</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Strict corpus</td>
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">80</td>
+<td style="text-align: left;">80.0%</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="table-3.-classification-model-performance-on-the-test-set" class="level3">
+<h3 class="anchored" data-anchor-id="table-3.-classification-model-performance-on-the-test-set">Table 3. Classification model performance on the test set</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 28%">
+<col style="width: 16%">
+<col style="width: 17%">
+<col style="width: 13%">
+<col style="width: 9%">
+<col style="width: 14%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Model</th>
+<th style="text-align: right;">Accuracy</th>
+<th style="text-align: right;">Precision</th>
+<th style="text-align: right;">Recall</th>
+<th style="text-align: right;">F1</th>
+<th style="text-align: right;">ROC-AUC</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">XGBoost</td>
+<td style="text-align: right;">0.764</td>
+<td style="text-align: right;">0.742</td>
+<td style="text-align: right;">0.759</td>
+<td style="text-align: right;">0.75</td>
+<td style="text-align: right;">0.847</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Logistic regression</td>
+<td style="text-align: right;">0.745</td>
+<td style="text-align: right;">0.717</td>
+<td style="text-align: right;">0.749</td>
+<td style="text-align: right;">0.733</td>
+<td style="text-align: right;">0.838</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Random forest</td>
+<td style="text-align: right;">0.737</td>
+<td style="text-align: right;">0.728</td>
+<td style="text-align: right;">0.698</td>
+<td style="text-align: right;">0.712</td>
+<td style="text-align: right;">0.837</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Majority baseline</td>
+<td style="text-align: right;">0.534</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0.5</td>
+</tr>
+</tbody>
+</table>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="figures/figure0_manual_audit_precision.png" class="img-fluid figure-img" style="width:70.0%"></p>
+<figcaption>Figure 0. Manual audit precision check.</figcaption>
+</figure>
+</div>
+<p>Figure 0 shows that the strict corpus is substantially more precise than the broad-but-not-strict set. This supports using the strict corpus for the final modeling and topic analysis.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="figures/figure1_monthly_volume_broad_vs_strict.png" class="img-fluid figure-img" style="width:95.0%"></p>
+<figcaption>Figure 1. Monthly AI-related article volume in the broad and strict corpora.</figcaption>
+</figure>
+</div>
+<p>Figure 1 shows the monthly volume of AI-related articles. The broad corpus captures the wider search environment, while the strict corpus captures a narrower set of articles with stronger AI relevance.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="figures/figure2_top_sections_strict.png" class="img-fluid figure-img" style="width:90.0%"></p>
+<figcaption>Figure 2. Most common sections in the strict AI corpus.</figcaption>
+</figure>
+</div>
+<p>Figure 2 shows that strict-corpus AI articles are distributed across multiple sections. This supports the interpretation that AI is not only a technology story but also a broader public issue.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="figures/figure3_section_share_over_time_strict.png" class="img-fluid figure-img" style="width:95.0%"></p>
+<figcaption>Figure 3. Section share over time in the strict AI corpus.</figcaption>
+</figure>
+</div>
+<p>Figure 3 shows that section composition changes over time. This is consistent with the idea that the public meaning of AI shifts across technology, business, politics, opinion, world news, and cultural contexts.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="figures/figure4_model_performance.png" class="img-fluid figure-img" style="width:85.0%"></p>
+<figcaption>Figure 4. Classification model performance.</figcaption>
+</figure>
+</div>
+<p>Figure 4 compares the baseline and machine-learning models on the test set. A model that improves on the majority baseline indicates that article text and metadata contain information about whether an AI article is framed as a Technology/Business story or a broader public-issue story.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="figures/figure5_confusion_matrix.png" class="img-fluid figure-img" style="width:70.0%"></p>
+<figcaption>Figure 5. Confusion matrix for the selected model.</figcaption>
+</figure>
+</div>
+<p>Figure 5 shows the selected model’s classification errors. The confusion matrix is useful because the two classes are substantively different: Technology/Business framing reflects narrower industry and technical coverage, while broader public-issue framing reflects social, political, cultural, and institutional coverage.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="figures/figure6_variable_importance.png" class="img-fluid figure-img" style="width:90.0%"></p>
+<figcaption>Figure 6. Variable importance for the selected model.</figcaption>
+</figure>
+</div>
+<p>Figure 6 reports the most influential features. These features help interpret which terms and metadata patterns distinguish Technology/Business AI coverage from broader public-issue AI coverage.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="figures/figure7_topic_prevalence.png" class="img-fluid figure-img" style="width:95.0%"></p>
+<figcaption>Figure 7. LDA topic prevalence over time in the strict AI corpus.</figcaption>
+</figure>
+</div>
+<p>Figure 7 shows how topic prevalence changes over time. The LDA model supports the conclusion that AI coverage is not a single homogeneous category. Instead, it contains multiple recurring themes, including tools, business competition, regulation, education, labor, copyright, and risk-related coverage. The interactive version of this figure is available on the website.</p>
+</section>
+</section>
+</section>
+<section id="conclusions-and-summary" class="level1">
+<h1>Conclusions and Summary</h1>
+<p>This project shows that <em>The Guardian’s</em> AI-related coverage increased and diversified between 2021 and 2025. The broad corpus is useful for describing the overall AI-related search environment, but the manual audit shows that the strict corpus is a better dataset for modeling core AI coverage. The strict corpus contains articles across many sections, which supports the central claim that AI has moved beyond a narrow technology frame and has become a broader public issue.</p>
+<p>The classification analysis shows whether article text and metadata can predict Technology/Business framing versus broader public-issue framing. The model comparison, confusion matrix, and feature-importance plot make the prediction task interpretable rather than only descriptive. The LDA topic model further shows that AI coverage contains several themes rather than a single unified topic.</p>
+<p>There are several limitations. First, the project studies one news organization, so the results should not be treated as representative of all media coverage. Second, the strict corpus is rule-based and validated only with a small manual audit sample. Third, the analysis relies mostly on headline and trail text rather than full article bodies. Fourth, sentiment and topic models are useful summaries but do not establish causal effects. Future work could compare multiple newspapers, label a larger validation set, use full article text, and study how specific events changed the framing of AI coverage over time.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+      &nbsp;
+    </div>   
+    <div class="nav-footer-center">
+<p>JSC370 Final Project</p>
+</div>
+    <div class="nav-footer-right">
+      &nbsp;
+    </div>
+  </div>
+</footer>
+
+
+
+
+</body></html>
