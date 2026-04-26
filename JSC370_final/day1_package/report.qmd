@@ -53,37 +53,37 @@ To study themes in AI coverage, I also fit an LDA topic model using the strict c
 
 {{< include report_text/generated_tables.md >}}
 
-![Figure 0. Manual audit precision check.](figures/figure0_manual_audit_precision.png){width=70%}
+![Manual audit precision check.](figures/figure0_manual_audit_precision.png){width=70%}
 
-Figure 0 shows that the strict corpus is substantially more precise than the broad-but-not-strict set. This supports using the strict corpus for the final modeling and topic analysis.
+Figure 1 shows that the strict corpus is substantially more precise than the broad-but-not-strict set. This supports using the strict corpus for the final modeling and topic analysis.
 
-![Figure 1. Monthly AI-related article volume in the broad and strict corpora.](figures/figure1_monthly_volume_broad_vs_strict.png){width=95%}
+![Monthly AI-related article volume in the broad and strict corpora.](figures/figure1_monthly_volume_broad_vs_strict.png){width=95%}
 
-Figure 1 shows the monthly volume of AI-related articles. The broad corpus captures the wider search environment, while the strict corpus captures a narrower set of articles with stronger AI relevance.
+Figure 2 shows the monthly volume of AI-related articles. The broad corpus captures the wider search environment, while the strict corpus captures a narrower set of articles with stronger AI relevance.
 
-![Figure 2. Most common sections in the strict AI corpus.](figures/figure2_top_sections_strict.png){width=90%}
+![Most common sections in the strict AI corpus.](figures/figure2_top_sections_strict.png){width=90%}
 
-Figure 2 shows that strict-corpus AI articles are distributed across multiple sections. This supports the interpretation that AI is not only a technology story but also a broader public issue.
+Figure 3 shows that strict-corpus AI articles are distributed across multiple sections. This supports the interpretation that AI is not only a technology story but also a broader public issue.
 
-![Figure 3. Section share over time in the strict AI corpus.](figures/figure3_section_share_over_time_strict.png){width=95%}
+![Section share over time in the strict AI corpus.](figures/figure3_section_share_over_time_strict.png){width=95%}
 
-Figure 3 shows that section composition changes over time. This is consistent with the idea that the public meaning of AI shifts across technology, business, politics, opinion, world news, and cultural contexts.
+Figure 4 shows that section composition changes over time. This is consistent with the idea that the public meaning of AI shifts across technology, business, politics, opinion, world news, and cultural contexts.
 
-![Figure 4. Classification model performance.](figures/figure4_model_performance.png){width=85%}
+![Classification model performance.](figures/figure4_model_performance.png){width=85%}
 
-Figure 4 compares the baseline and machine-learning models on the test set. A model that improves on the majority baseline indicates that article text and metadata contain information about whether an AI article is framed as a Technology/Business story or a broader public-issue story.
+Figure 5 compares the baseline and machine-learning models on the test set. A model that improves on the majority baseline indicates that article text and metadata contain information about whether an AI article is framed as a Technology/Business story or a broader public-issue story.
 
-![Figure 5. Confusion matrix for the selected model.](figures/figure5_confusion_matrix.png){width=70%}
+![Confusion matrix for the selected model.](figures/figure5_confusion_matrix.png){width=70%}
 
-Figure 5 shows the selected model's classification errors. The confusion matrix is useful because the two classes are substantively different: Technology/Business framing reflects narrower industry and technical coverage, while broader public-issue framing reflects social, political, cultural, and institutional coverage.
+Figure 6 shows the selected model's classification errors. The confusion matrix is useful because the two classes are substantively different: Technology/Business framing reflects narrower industry and technical coverage, while broader public-issue framing reflects social, political, cultural, and institutional coverage.
 
-![Figure 6. Variable importance for the selected model.](figures/figure6_variable_importance.png){width=90%}
+![Variable importance for the selected model.](figures/figure6_variable_importance.png){width=90%}
 
-Figure 6 reports the most influential features. These features help interpret which terms and metadata patterns distinguish Technology/Business AI coverage from broader public-issue AI coverage.
+Figure 7 reports the most influential features. These features help interpret which terms and metadata patterns distinguish Technology/Business AI coverage from broader public-issue AI coverage.
 
-![Figure 7. LDA topic prevalence over time in the strict AI corpus.](figures/figure7_topic_prevalence.png){width=95%}
+![LDA topic prevalence over time in the strict AI corpus.](figures/figure7_topic_prevalence.png){width=95%}
 
-Figure 7 shows how topic prevalence changes over time. The LDA model supports the conclusion that AI coverage is not a single homogeneous category. Instead, it contains multiple recurring themes, including tools, business competition, regulation, education, labor, copyright, and risk-related coverage. The interactive version of this figure is available on the website.
+Figure 8 shows how topic prevalence changes over time. The LDA model supports the conclusion that AI coverage is not a single homogeneous category. Instead, it contains multiple recurring themes, including tools, business competition, regulation, education, labor, copyright, and risk-related coverage. The interactive version of this figure is available on the website.
 
 # Conclusions and Summary
 
