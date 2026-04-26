@@ -22,4 +22,4 @@ The main research question is:
 - [Interactive visualizations](viz.html)
 - [Full report](report.html)
 - [Download the PDF report](report.pdf)
-- [GitHub repository](https://github.com/Zhguo903/JSC370)
+- [GitHub repository](https://github.com/Zhguo903/JSC370/tree/main/JSC370_final/day1_package)
